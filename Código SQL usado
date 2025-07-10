@@ -1,0 +1,138 @@
+-- 1) Deleta e recria o banco de dados
+DROP DATABASE IF EXISTS agenda_escolar;
+CREATE DATABASE agenda_escolar
+  DEFAULT CHARACTER SET utf8mb4
+  DEFAULT COLLATE utf8mb4_unicode_ci;
+
+USE agenda_escolar;
+
+-- 2) Endereço
+CREATE TABLE Endereco (
+    id_endereco INT AUTO_INCREMENT PRIMARY KEY,
+    cep CHAR(9),
+    rua VARCHAR(100),
+    numero VARCHAR(10),
+    bairro VARCHAR(60),
+    cidade VARCHAR(60),
+    estado CHAR(2),
+    complemento VARCHAR(60)
+);
+
+-- 3) Contato
+CREATE TABLE Contato (
+    id_contato INT AUTO_INCREMENT PRIMARY KEY,
+    telefone_celular VARCHAR(20),
+    telefone_residencial VARCHAR(20),
+    email VARCHAR(100)
+);
+
+-- 4) Professor
+CREATE TABLE Professor (
+    id_professor INT AUTO_INCREMENT PRIMARY KEY,
+    nome_completo VARCHAR(100) NOT NULL,
+    cpf CHAR(14) UNIQUE,
+    data_nascimento DATE,
+    foto_url VARCHAR(255),
+    id_endereco INT,
+    id_contato INT,
+    FOREIGN KEY (id_endereco) REFERENCES Endereco(id_endereco) ON DELETE SET NULL,
+    FOREIGN KEY (id_contato) REFERENCES Contato(id_contato) ON DELETE SET NULL
+);
+
+-- 5) Disciplina
+CREATE TABLE Disciplina (
+    id_disciplina INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL
+);
+
+-- 6) Turma
+CREATE TABLE Turma (
+    id_turma INT AUTO_INCREMENT PRIMARY KEY,
+    codigo VARCHAR(10) NOT NULL,
+    turno ENUM('Manhã', 'Tarde', 'Noite'),
+    capacidade SMALLINT,
+    id_disciplina INT,
+    FOREIGN KEY (id_disciplina) REFERENCES Disciplina(id_disciplina) ON DELETE SET NULL
+);
+
+-- 7) Turma_Professor (relação N:N entre Turma e Professor)
+CREATE TABLE Turma_Professor (
+    id_turma_prof INT AUTO_INCREMENT PRIMARY KEY,
+    id_turma INT NOT NULL,
+    id_professor INT NOT NULL,
+    FOREIGN KEY (id_turma) REFERENCES Turma(id_turma) ON DELETE CASCADE,
+    FOREIGN KEY (id_professor) REFERENCES Professor(id_professor) ON DELETE CASCADE
+);
+
+-- 8) Aluno
+CREATE TABLE Aluno (
+    id_aluno INT AUTO_INCREMENT PRIMARY KEY,
+    nome_completo VARCHAR(100) NOT NULL,
+    data_nascimento DATE NOT NULL,
+    nacionalidade VARCHAR(50),
+    cpf CHAR(14) UNIQUE,
+    cartao_sus CHAR(18),
+    pessoa_com_deficiencia BOOLEAN DEFAULT FALSE,
+    data_matricula DATE NOT NULL,
+    validade_matricula DATE,
+    foto_url VARCHAR(255),
+    id_endereco INT,
+    id_contato INT,
+    FOREIGN KEY (id_endereco) REFERENCES Endereco(id_endereco) ON DELETE SET NULL,
+    FOREIGN KEY (id_contato) REFERENCES Contato(id_contato) ON DELETE SET NULL
+);
+
+-- 9) Responsável
+CREATE TABLE Responsavel (
+    id_responsavel INT AUTO_INCREMENT PRIMARY KEY,
+    nome_completo VARCHAR(100) NOT NULL,
+    parentesco ENUM('Pai', 'Mãe', 'Responsável Legal', 'Outro') NOT NULL,
+    data_nascimento DATE,
+    nacionalidade VARCHAR(50),
+    cpf CHAR(14),
+    estado_civil ENUM('Solteiro', 'Casado', 'Divorciado', 'Viúvo', 'Outro'),
+    profissao VARCHAR(100),
+    id_endereco INT,
+    id_contato INT,
+    FOREIGN KEY (id_endereco) REFERENCES Endereco(id_endereco) ON DELETE SET NULL,
+    FOREIGN KEY (id_contato) REFERENCES Contato(id_contato) ON DELETE SET NULL
+);
+
+-- 10) Associação Aluno-Responsável
+CREATE TABLE Aluno_Responsavel (
+    id_aluno INT NOT NULL,
+    id_responsavel INT NOT NULL,
+    PRIMARY KEY(id_aluno, id_responsavel),
+    FOREIGN KEY (id_aluno) REFERENCES Aluno(id_aluno) ON DELETE CASCADE,
+    FOREIGN KEY (id_responsavel) REFERENCES Responsavel(id_responsavel) ON DELETE CASCADE
+);
+
+-- 11) Matrícula (vínculo Aluno ↔ Turma)
+CREATE TABLE Matricula (
+    id_matricula INT AUTO_INCREMENT PRIMARY KEY,
+    id_aluno INT NOT NULL,
+    id_turma INT NOT NULL,
+    data_matricula DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_aluno) REFERENCES Aluno(id_aluno) ON DELETE CASCADE,
+    FOREIGN KEY (id_turma) REFERENCES Turma(id_turma) ON DELETE CASCADE
+);
+
+-- 12) Ocorrências
+CREATE TABLE Ocorrencia (
+    id_ocorrencia INT AUTO_INCREMENT PRIMARY KEY,
+    id_matricula INT NOT NULL,
+    motivo VARCHAR(100) NOT NULL,
+    observacao TEXT NOT NULL,
+    situacao ENUM('Aberta', 'Em Andamento', 'Concluída') DEFAULT 'Aberta',
+    data_ocorrencia DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    solucao_secretaria TEXT,
+    FOREIGN KEY (id_matricula) REFERENCES Matricula(id_matricula) ON DELETE CASCADE
+);
+
+-- 13) Índices para performance
+CREATE INDEX idx_turma_codigo    ON Turma(codigo);
+CREATE INDEX idx_professor_nome  ON Professor(nome_completo);
+CREATE INDEX idx_aluno_nome      ON Aluno(nome_completo);
+CREATE INDEX idx_ocorrencia_data ON Ocorrencia(data_ocorrencia);
+
+select * from Aluno;
